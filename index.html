@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Speed Racer S — Pulssteuerung</title>
+<link rel="stylesheet" href="style.css?v=b4fba7c">
+<link rel="manifest" href="manifest.webmanifest?v=b4fba7c">
+<meta name="theme-color" content="#07090c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Speed Racer">
+</head>
+<body>
+<div class="app">
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M13.5 2 4 13.5h6.5L9.5 22 20 9.5h-6.5z"/></svg>
+    <span class="brand-name">Speed Racer</span>
+  </div>
+  <div class="topbar-actions">
+    <button class="chip" id="chip-bike" data-state="off" aria-label="Rad">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18.5" cy="17.5" r="3.5"/>
+        <circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/>
+        <path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>
+      <span class="chip-label">Rad</span><span class="dot"></span>
+    </button>
+    <button class="chip" id="chip-hr" data-state="off" aria-label="Pulsgurt">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"/></svg>
+      <span class="chip-label">Gurt</span><span class="dot"></span>
+    </button>
+    <button class="icon-btn" id="btn-profile" aria-label="Profil und Einstellungen">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/>
+        <path d="M4 21a8 8 0 0 1 16 0"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="banner" id="banner" role="status" hidden></div>
+
+<main class="cockpit">
+  <div class="col">
+    <section class="card hero" id="hero" data-tone="none">
+      <div class="hero-head">
+        <span class="eyebrow">Puls</span>
+        <span class="zone-tag" id="zone-tag" hidden></span>
+      </div>
+      <div class="hero-main">
+        <div class="hr-read">
+          <span class="hr-big num" id="hr">–</span><span class="hr-unit">bpm</span>
+        </div>
+        <div class="target">
+          <span class="eyebrow" id="hr-target-label">Zielpuls</span>
+          <b class="num" id="hr-target">–</b>
+        </div>
+      </div>
+      <div class="zonebar" aria-hidden="true">
+        <div class="zonebar-track" id="zonebar-track"></div>
+        <div class="zonebar-band" id="zone-band" hidden></div>
+        <div class="zonebar-now" id="zone-now" hidden></div>
+      </div>
+      <div class="reason" id="reason">bereit</div>
+    </section>
+
+    <section class="metrics">
+      <div class="metric" id="m-rpm">
+        <span class="eyebrow">Kadenz</span>
+        <b class="num" id="rpm">–</b><small>rpm</small>
+      </div>
+      <div class="metric">
+        <span class="eyebrow">Leistung</span>
+        <b class="num" id="watt">–</b><small>Watt</small>
+      </div>
+      <div class="metric">
+        <span class="eyebrow">Stufe</span>
+        <b class="num" id="level">–</b>
+        <div class="pips" id="level-pips" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <section class="stats">
+      <div><span class="eyebrow">Fahrzeit</span><b class="num" id="elapsed">–</b></div>
+      <div id="s-dist"><span class="eyebrow">Strecke</span><b class="num" id="dist">–</b><small>km</small></div>
+      <div><span class="eyebrow">Energie</span><b class="num" id="kcal">–</b><small>kcal</small></div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="card session">
+      <div class="session-empty" id="session-empty">
+        <div class="empty-art" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <h2>Bereit, wenn du es bist</h2>
+        <p class="muted">Stell ein Zonentraining oder Intervalle zusammen — oder fahr eine Strecke nach.</p>
+        <button class="btn primary lg" id="btn-plan">Training wählen</button>
+      </div>
+
+      <div id="session-live" hidden>
+       <div id="seg-block">
+        <div class="seg-head">
+          <div class="seg-title">
+            <span class="eyebrow" id="seg-index"></span>
+            <h2 class="seg-name" id="seg-name"></h2>
+          </div>
+          <div class="seg-time num" id="seg-time">–:––</div>
+        </div>
+        <div class="progress"><i id="seg-bar"></i></div>
+        <div class="timeline-wrap">
+          <div class="timeline" id="timeline"></div>
+          <div class="timeline-cursor" id="timeline-cursor"></div>
+        </div>
+        <div class="seg-next" id="seg-next"></div>
+       </div>
+
+       <div id="route-block" hidden>
+        <div class="seg-head">
+          <div class="seg-title">
+            <span class="eyebrow" id="route-sub"></span>
+            <h2 class="seg-name" id="route-name"></h2>
+          </div>
+          <div class="route-left">
+            <b class="num" id="route-left">–</b><small>km übrig</small>
+          </div>
+        </div>
+
+        <div class="route-view">
+          <svg class="map" id="route-map" viewBox="0 0 100 100"
+               preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <path class="map-line" id="map-line" vector-effect="non-scaling-stroke"></path>
+            <path class="map-done" id="map-done" vector-effect="non-scaling-stroke"></path>
+            <circle class="map-dot" id="map-dot" r="2.6"></circle>
+          </svg>
+
+          <div class="profile-wrap">
+            <svg class="profile" id="route-profile" viewBox="0 0 1000 200"
+                 preserveAspectRatio="none" aria-hidden="true">
+              <g id="route-bands"></g>
+              <path class="profile-line" id="route-line" vector-effect="non-scaling-stroke"></path>
+              <rect class="profile-veil" id="route-veil" y="0" height="200" x="0" width="0"></rect>
+              <line class="profile-mark" id="route-mark" y1="0" y2="200"
+                    vector-effect="non-scaling-stroke"></line>
+            </svg>
+            <div class="profile-foot">
+              <span id="prof-lo">–</span>
+              <span class="muted" id="prof-look">–</span>
+              <span id="prof-hi">–</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="route-stats">
+          <div><span class="eyebrow" id="lbl-grade">Steigung</span><b class="num" id="route-grade">–</b><small>%</small></div>
+          <div><span class="eyebrow" id="lbl-speed">Tempo</span><b class="num" id="route-speed">–</b><small>km/h</small></div>
+          <div><span class="eyebrow">Anstieg</span><b class="num" id="route-alt">–</b><small>Hm</small></div>
+          <div><span class="eyebrow" id="lbl-ahead">gegen</span><b class="num" id="route-ahead">–</b><small id="ahead-ref">damals</small></div>
+        </div>
+
+        <p class="route-why" id="route-why"></p>
+
+        <!-- Das Kadenzband erklaert die Schaltung: verlaesst der Zeiger das
+             graue Feld, zaehlt die Automatik herunter und sagt vorher an,
+             wohin sie schaltet. -->
+        <div class="cadence" id="cadence-block">
+          <div class="cadence-head">
+            <span class="eyebrow">Trittfrequenz</span>
+            <b class="num" id="cad-now">–</b><small>rpm</small>
+            <span class="shift-hint" id="shift-hint" hidden></span>
+          </div>
+          <div class="cadbar">
+            <div class="cadbar-band" id="cadbar-band"></div>
+            <div class="cadbar-fill" id="cadbar-fill" hidden></div>
+            <div class="cadbar-now" id="cadbar-now" hidden></div>
+          </div>
+          <div class="cadbar-scale"><span>40</span><span>70</span><span>100</span><span>130</span></div>
+        </div>
+
+        <div class="gearbox" id="gear-block">
+          <div class="gear-head">
+            <span class="eyebrow">Schaltung</span>
+            <span class="muted small" id="gear-why"></span>
+            <button class="btn ghost sm" id="gear-auto" aria-pressed="true">automatisch</button>
+          </div>
+          <div class="gear-row">
+            <button class="icon-btn" id="gear-down" aria-label="Runterschalten" hidden>−</button>
+            <div class="gear-ladder" id="gear-ladder" aria-hidden="true"></div>
+            <b id="gear-val">–</b>
+            <button class="icon-btn" id="gear-up" aria-label="Hochschalten" hidden>+</button>
+          </div>
+        </div>
+       </div>
+
+        <div class="controls">
+          <button class="btn primary xl" id="btn-start" disabled>Start</button>
+          <button class="btn xl" id="btn-pause" hidden>Pause</button>
+          <button class="btn danger xl" id="btn-stop" hidden>Stopp</button>
+        </div>
+        <p class="start-hint" id="start-hint" hidden>Zum Starten zuerst das Rad verbinden.</p>
+      </div>
+
+      <div class="session-foot">
+        <button class="btn ghost sm" id="btn-replan" hidden>Training ändern</button>
+        <button class="btn ghost sm" id="btn-manual" aria-pressed="false">Handbetrieb</button>
+      </div>
+      <div class="manual" id="manual-wrap" hidden>
+        <button class="icon-btn" id="manual-minus" aria-label="Stufe runter">−</button>
+        <input type="range" id="manual-level" min="1" max="16" value="4" aria-label="Stufe">
+        <button class="icon-btn" id="manual-plus" aria-label="Stufe hoch">+</button>
+        <b class="num" id="manual-val">Stufe 4</b>
+      </div>
+    </section>
+
+    <section class="card ride" id="ride" hidden>
+      <div class="ride-head">
+        <h2>Aufzeichnung</h2>
+        <span class="muted" id="rec-summary">Noch nichts aufgezeichnet.</span>
+      </div>
+      <div class="ride-actions">
+        <button class="btn primary" id="btn-icu">An intervals.icu senden</button>
+        <button class="btn" id="btn-tcx">TCX</button>
+        <button class="btn" id="btn-csv">CSV</button>
+      </div>
+      <div class="msg" id="export-msg"></div>
+    </section>
+  </div>
+</main>
+</div>
+
+<!-- Geräte ---------------------------------------------------------------->
+<dialog class="sheet" id="sheet-devices" aria-labelledby="devices-title">
+  <div class="sheet-inner">
+    <form method="dialog" class="sheet-head">
+      <h2 id="devices-title">Geräte</h2>
+      <button class="icon-btn" aria-label="Schließen">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </form>
+    <div class="sheet-body">
+      <div class="device" id="dev-bike" data-state="off">
+        <div class="device-row">
+          <div class="device-icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/>
+            <circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg></div>
+          <div class="device-info">
+            <b>Speed Racer S</b>
+            <span id="dev-bike-state">nicht verbunden</span>
+          </div>
+          <button class="btn primary" id="btn-bike">Verbinden</button>
+        </div>
+        <ol class="steps">
+          <li>Eine halbe Minute treten — das Rad sendet nur, solange es wach ist.</li>
+          <li>Dann verbinden. Die App fordert die Konsole zum Messen auf.</li>
+        </ol>
+      </div>
+
+      <div class="device" id="dev-hr" data-state="off">
+        <div class="device-row">
+          <div class="device-icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"/></svg></div>
+          <div class="device-info">
+            <b>Pulsgurt</b>
+            <span id="dev-hr-state">nicht verbunden</span>
+          </div>
+          <button class="btn primary" id="btn-hr">Verbinden</button>
+        </div>
+        <ol class="steps">
+          <li>Gurt in den Kopplungsmodus: <b>zweimal kurz</b> drücken (3 grüne Blitze).</li>
+          <li>Dann <b>4 s halten</b>, bis es orange blinkt — jetzt verbinden.</li>
+        </ol>
+      </div>
+
+      <label class="switch-row">
+        <span><b>Alle Geräte zeigen</b>
+          <small>Falls Rad oder Gurt in der Auswahl fehlen.</small></span>
+        <input type="checkbox" class="switch" id="show-all">
+      </label>
+
+      <p class="muted small">Bleiben Trittfrequenz und Leistung leer, obwohl Stufe
+        und Strecke ankommen, erfasst die Konsole die Tritte nicht: neu verbinden,
+        sonst Stecker ziehen, zehn Sekunden warten, wieder einstecken.</p>
+    </div>
+  </div>
+</dialog>
+
+<!-- Training -------------------------------------------------------------->
+<dialog class="sheet" id="sheet-plan" aria-labelledby="plan-title">
+  <div class="sheet-inner">
+    <form method="dialog" class="sheet-head">
+      <h2 id="plan-title">Training</h2>
+      <button class="icon-btn" aria-label="Schließen">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </form>
+    <div class="sheet-body">
+      <div class="segmented" role="tablist">
+        <button class="tab" data-prog="zone" role="tab">Zonentraining</button>
+        <button class="tab" data-prog="interval" role="tab">Intervalle</button>
+        <button class="tab" data-prog="route" role="tab">Strecke</button>
+      </div>
+
+      <div class="notice" id="plan-nozones" hidden>
+        <span>Noch keine Pulszone ausgefüllt. Die Zonen stehen im Profil.</span>
+        <button class="btn sm" id="btn-to-profile">Zum Profil</button>
+      </div>
+
+      <div class="prog" id="prog-zone">
+        <div class="group">
+          <h3>Hauptteil</h3>
+          <div class="frow">
+            <span class="frow-label">Dauer</span>
+            <span class="qty"><input type="number" inputmode="numeric" id="z-min" value="30" min="1" max="240"><span class="unit">min</span></span>
+            <span class="unit">in</span>
+            <select id="z-zone"></select>
+          </div>
+        </div>
+        <div class="group">
+          <h3>Ein- und Ausfahren</h3>
+          <div class="frow">
+            <span class="frow-label">Einfahren</span>
+            <span class="qty"><input type="number" inputmode="numeric" id="z-warm" value="10" min="0" max="60"><span class="unit">min</span></span>
+            <span class="unit">in</span>
+            <select id="z-warmzone"></select>
+          </div>
+          <div class="frow">
+            <span class="frow-label">Ausfahren</span>
+            <span class="qty"><input type="number" inputmode="numeric" id="z-cool" value="6" min="0" max="60"><span class="unit">min</span></span>
+            <span class="unit">in</span>
+            <select id="z-coolzone"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="prog" id="prog-interval" hidden>
+        <div class="group">
+          <h3>Intervalle</h3>
+          <div class="frow">
+            <span class="frow-label">Anzahl</span>
+            <span class="qty"><input type="number" inputmode="numeric" id="i-count" value="5" min="1" max="30"><span class="unit">×</span></span>
+          </div>
+          <div class="frow">
+            <span class="frow-label">Belastung</span>
+            <span class="qty"><input type="number" inputmode="decimal" id="i-work" value="4" min="0.5" step="0.5"><span class="unit">min</span></span>
+            <span class="unit bei">bei</span>
+            <select id="i-workmode" class="mode">
+              <option value="watt">Watt</option>
+              <option value="zone">Pulszone</option>
+            </select>
+            <span id="wrap-i-workw" class="qty">
+              <input type="number" inputmode="numeric" id="i-workw" value="180" min="30" max="400"><span class="unit">W</span></span>
+            <span id="wrap-i-workzone" class="inline" hidden>
+              <select id="i-workzone"></select></span>
+          </div>
+          <div class="frow">
+            <span class="frow-label">Erholung</span>
+            <span class="qty"><input type="number" inputmode="decimal" id="i-rest" value="3" min="0.5" step="0.5"><span class="unit">min</span></span>
+            <span class="unit bei">bei</span>
+            <select id="i-restmode" class="mode">
+              <option value="watt">Watt</option>
+              <option value="zone">Pulszone</option>
+            </select>
+            <span id="wrap-i-restw" class="qty">
+              <input type="number" inputmode="numeric" id="i-restw" value="80" min="25" max="250"><span class="unit">W</span></span>
+            <span id="wrap-i-restzone" class="inline" hidden>
+              <select id="i-restzone"></select></span>
+          </div>
+          <p class="muted small">
+            Watt steuert hier zuverlässiger als der Puls: der Puls braucht ein bis
+            zwei Minuten, um einer Laständerung zu folgen. Dein Maximalpuls bleibt
+            als Obergrenze aktiv. Kennst du deine Wattwerte nicht, fahr zuerst ein
+            Zonentraining und lies ab, was sich bei deinem Zielpuls einstellt.
+          </p>
+        </div>
+        <div class="group">
+          <h3>Ein- und Ausfahren</h3>
+          <div class="frow">
+            <span class="frow-label">Einfahren</span>
+            <span class="qty"><input type="number" inputmode="numeric" id="i-warm" value="10" min="0" max="60"><span class="unit">min</span></span>
+            <span class="unit">in</span>
+            <select id="i-warmzone"></select>
+          </div>
+          <div class="frow">
+            <span class="frow-label">Ausfahren</span>
+            <span class="qty"><input type="number" inputmode="numeric" id="i-cool" value="6" min="0" max="60"><span class="unit">min</span></span>
+            <span class="unit">in</span>
+            <select id="i-coolzone"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="prog" id="prog-route" hidden>
+        <div class="group">
+          <h3>Strecke</h3>
+          <div class="route-list" id="route-list"></div>
+          <p class="muted small" id="route-none" hidden>
+            Noch keine Strecke hinterlegt. Aus einer FIT-Aufzeichnung wird eine
+            mit <code>tools/fit2route.py</code>.
+          </p>
+          <div class="best-row" id="route-best" hidden>
+            <span id="best-text"></span>
+            <button class="btn ghost sm" id="best-clear">zurücksetzen</button>
+          </div>
+          <p class="muted small" id="route-note"></p>
+        </div>
+        <div class="group">
+          <h3>Fahrer und Rad</h3>
+          <div class="frow">
+            <span class="frow-label">Systemgewicht</span>
+            <span class="qty"><input type="number" inputmode="numeric" id="r-mass" value="85" min="40" max="160"><span class="unit">kg</span></span>
+          </div>
+          <div class="frow">
+            <span class="frow-label">Schaltung</span>
+            <select id="r-auto">
+              <option value="1">automatisch nach Trittfrequenz</option>
+              <option value="0">von Hand</option>
+            </select>
+          </div>
+          <p class="muted small">
+            Fahrer plus Rad, angezogen. Das Gewicht entscheidet am Berg über
+            alles — zehn Kilo mehr sind bei 8 % rund 20 Watt. Der Gang bestimmt
+            nicht dein Tempo, sondern deine Trittfrequenz: er verteilt die
+            Kraft, die die Steigung verlangt, auf die sechzehn Stufen des Rads.
+          </p>
+        </div>
+      </div>
+
+      <div class="group preview" id="plan-preview">
+        <div class="preview-head">
+          <h3 id="preview-title">Ablauf</h3>
+          <span class="msg" id="workout-msg"></span>
+        </div>
+        <div class="timeline-wrap"><div class="timeline" id="plan-timeline"></div></div>
+        <div class="muted small" id="workout-preview"></div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn primary lg block" id="btn-load">Training laden</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Profil ---------------------------------------------------------------->
+<dialog class="sheet" id="sheet-profile" aria-labelledby="profile-title">
+  <div class="sheet-inner">
+    <form method="dialog" class="sheet-head">
+      <h2 id="profile-title">Profil</h2>
+      <button class="icon-btn" aria-label="Schließen">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </form>
+    <div class="sheet-body">
+      <section class="group">
+        <div class="group-head">
+          <h3>Pulszonen</h3>
+          <span class="msg" id="zone-msg"></span>
+        </div>
+        <p class="muted small">Von Hand eintragen — hier wird nichts berechnet.
+          Die Werte bleiben in diesem Browser gespeichert.</p>
+        <div class="zone-cols" aria-hidden="true">
+          <span></span><span>Name</span><span>von</span><span>bis</span><span></span>
+        </div>
+        <div class="zone-list" id="zone-rows"></div>
+        <div class="zone-foot">
+          <button class="btn sm" id="zone-add">+ Zone hinzufügen</button>
+        </div>
+        <p class="muted small" id="ceiling-note"></p>
+      </section>
+
+      <section class="group">
+        <h3>intervals.icu</h3>
+        <label class="field">
+          <span>API-Schlüssel</span>
+          <input type="password" id="icu-key" autocomplete="off"
+                 placeholder="aus Settings → Developer Settings">
+        </label>
+        <p class="muted small">Bleibt in diesem Browser. Die Athleten-Kennung wird
+          nicht gebraucht — der Schlüssel sagt dem Dienst, wer du bist.</p>
+      </section>
+
+      <section class="group">
+        <h3>Diagnose</h3>
+        <div class="btn-row">
+          <button class="btn sm" id="btn-diag">Umgebung prüfen</button>
+          <button class="btn sm" id="btn-log-share">Log teilen</button>
+          <button class="btn sm" id="btn-log-copy">Log kopieren</button>
+          <button class="btn sm ghost" id="btn-log-clear">Leeren</button>
+        </div>
+        <span class="msg" id="log-msg"></span>
+        <pre id="log"></pre>
+      </section>
+
+      <p class="muted small about">Die Leistung ist aus Widerstandsstufe und
+        Trittfrequenz berechnet, nicht an der Kurbel gemessen.</p>
+    </div>
+  </div>
+</dialog>
+
+<script type="module" src="app.js?v=b4fba7c"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "Speed Racer S — Pulssteuerung",
+  "short_name": "Speed Racer",
+  "description": "Pulsgesteuertes Intervalltraining auf der Hammer Speed Racer S",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07090c",
+  "theme_color": "#07090c"
+}
