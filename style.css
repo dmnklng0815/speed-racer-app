@@ -1,0 +1,775 @@
+/* An author rule such as `.qty { display: flex }` outranks the browser's own
+   `[hidden] { display: none }`, so elements toggled with the hidden attribute
+   stayed visible. This puts that back in force. */
+[hidden] { display: none !important; }
+
+/* A cockpit on a handlebar: dark on purpose, one look, no light variant. */
+:root {
+  --bg: #07090c;
+  --bg-2: #0d1117;
+  --surface: rgba(255, 255, 255, .035);
+  --surface-2: rgba(255, 255, 255, .065);
+  --surface-3: rgba(255, 255, 255, .11);
+  --line: rgba(255, 255, 255, .08);
+  --line-2: rgba(255, 255, 255, .16);
+  --fg: #f3f5f8;
+  --muted: #8c95a3;
+  --faint: #545c69;
+
+  --accent: #c6ff34;
+  --accent-ink: #0c1100;
+  --accent-soft: rgba(198, 255, 52, .16);
+  --hot: #ff4d6d;
+  --cool: #4d9bff;
+  --warn: #ffb020;
+  --watt: #a78bfa;
+
+  /* Zone colours, cool to hot, in the order the zones are listed. */
+  --z1: #4d9bff; --z2: #22d3c5; --z3: #3ee089;
+  --z4: #ffb020; --z5: #ff4d6d; --z6: #d67bff;
+
+  --r-lg: 22px; --r-md: 16px; --r-sm: 12px;
+  --font: -apple-system, "SF Pro Text", system-ui, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+  --font-display: -apple-system, "SF Pro Display", system-ui, "Segoe UI",
+                  Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; min-height: 100dvh; color: var(--fg);
+  font: 16px/1.45 var(--font);
+  background:
+    radial-gradient(1100px 520px at 85% -12%, rgba(198, 255, 52, .07), transparent 60%),
+    radial-gradient(900px 520px at -15% 105%, rgba(77, 155, 255, .07), transparent 60%),
+    var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+body:has(dialog[open]) { overflow: hidden; }
+
+svg { width: 20px; height: 20px; fill: none; stroke: currentColor;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+h2,
+h3 { margin: 0; }
+.num { font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
+.muted { color: var(--muted); }
+.small { font-size: .84rem; line-height: 1.5; }
+.eyebrow {
+  display: block; color: var(--muted); font-size: .7rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .09em; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.msg { color: var(--muted); font-size: .84rem; }
+.msg.err { color: #ff8fa3; }
+.msg.warn { color: #ffc56b; }
+.msg.ok { color: var(--accent); }
+
+.app {
+  max-width: 1320px; margin: 0 auto;
+  padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+           max(28px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+
+/* --- top bar ------------------------------------------------------------ */
+
+.topbar { display: flex; align-items: center; justify-content: space-between;
+          gap: 12px; margin-bottom: 14px; min-height: 48px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700;
+         font-family: var(--font-display); letter-spacing: -.01em;
+         font-size: 1.05rem; min-width: 0; }
+.brand-mark { width: 30px; height: 30px; padding: 6px; border-radius: 9px;
+              fill: var(--accent-ink); stroke: none; background: var(--accent);
+              box-shadow: 0 0 24px rgba(198, 255, 52, .25); flex: none; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 7px; height: 40px;
+  padding: 0 13px 0 11px; border-radius: 999px; cursor: pointer;
+  font: 600 .88rem/1 var(--font); color: var(--muted);
+  background: var(--surface-2); border: 1px solid var(--line);
+  transition: color .2s, border-color .2s, background .2s;
+}
+.chip svg { width: 17px; height: 17px; }
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint);
+             transition: background .2s, box-shadow .2s; }
+.chip[data-state="on"] { color: var(--fg); }
+.chip[data-state="on"] .dot { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.chip[data-state="busy"] .dot { background: var(--warn); animation: blink 1s ease-in-out infinite; }
+.chip[data-state="err"] { color: #ff8fa3; border-color: rgba(255, 77, 109, .4); }
+.chip[data-state="err"] .dot { background: var(--hot); }
+@keyframes blink { 50% { opacity: .3; } }
+
+/* Beim Fahrer-Chip ist das Etikett der Inhalt: es bleibt stehen, wo die
+   Geraete-Chips auf ihr Symbol zusammenschnurren, und wird stattdessen
+   gekuerzt. */
+.chip-rider { padding: 0 13px 0 11px; }
+.chip-rider .chip-label { display: inline-block; max-width: 8.5em;
+                          overflow: hidden; text-overflow: ellipsis;
+                          white-space: nowrap; }
+
+.icon-btn {
+  display: inline-grid; place-items: center; width: 40px; height: 40px;
+  flex: none; border-radius: 999px; cursor: pointer; color: var(--fg);
+  background: var(--surface-2); border: 1px solid var(--line);
+  font: 600 1.25rem/1 var(--font); padding: 0;
+  transition: background .15s, transform .08s;
+}
+.icon-btn:active { transform: scale(.94); }
+.icon-btn:hover { background: var(--surface-3); }
+
+.banner {
+  margin: 0 0 14px; padding: 12px 16px; border-radius: var(--r-md);
+  font-size: .92rem; line-height: 1.45;
+  background: rgba(255, 176, 32, .1); border: 1px solid rgba(255, 176, 32, .32);
+  color: #ffd592;
+}
+.banner.err { background: rgba(255, 77, 109, .1); border-color: rgba(255, 77, 109, .38);
+              color: #ffb3c0; }
+
+/* --- cockpit layout ----------------------------------------------------- */
+
+.cockpit { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.col { display: grid; gap: 12px; align-content: start; min-width: 0; }
+@media (min-width: 900px) {
+  .cockpit { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; }
+  .col { gap: 16px; }
+}
+@media (min-width: 680px) and (max-height: 560px) {
+  .cockpit { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 12px; }
+}
+
+.card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .02));
+  border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 18px 20px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 24px 48px -28px rgba(0, 0, 0, .7);
+}
+
+/* --- heart rate hero ---------------------------------------------------- */
+
+.hero { position: relative; overflow: hidden; --tone: var(--fg); }
+.hero::before {
+  content: ""; position: absolute; inset: -40% -20% auto auto; width: 70%;
+  aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, var(--glow, transparent), transparent);
+  opacity: .5; transition: background .6s;
+}
+.hero[data-tone="good"] { --tone: var(--accent); --glow: rgba(198, 255, 52, .22); }
+.hero[data-tone="hot"] { --tone: var(--hot);    --glow: rgba(255, 77, 109, .25); }
+.hero[data-tone="cool"] { --tone: var(--cool);   --glow: rgba(77, 155, 255, .22); }
+
+.hero-head { display: flex; align-items: center; justify-content: space-between;
+             gap: 10px; min-height: 26px; }
+.zone-tag {
+  display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px;
+  border-radius: 999px; font-size: .78rem; font-weight: 600;
+  background: color-mix(in srgb, var(--c) 16%, transparent);
+  color: var(--c); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+}
+.zone-tag::before { content: ""; width: 7px; height: 7px; border-radius: 50%;
+                    background: var(--c); flex: none; }
+/* Schmale Karte: lieber gekuerzt als zweizeilig — ein umbrechender Chip
+   macht die Pulskarte hoeher und nimmt der Zahl daneben den Platz. */
+.zone-tag { min-width: 0; overflow: hidden; white-space: nowrap;
+            text-overflow: ellipsis; }
+
+.hero-main { position: relative; display: flex; align-items: flex-end;
+             justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.hr-read { display: flex; align-items: baseline; gap: 10px; }
+.hr-big {
+  font-family: var(--font-display); font-weight: 800; line-height: .9;
+  font-size: clamp(5.2rem, 26vw, 9.5rem); color: var(--tone);
+  transition: color .4s; letter-spacing: -.045em;
+}
+.hr-unit { color: var(--muted); font-weight: 600; font-size: 1.05rem; }
+.target { text-align: right; padding-bottom: 10px; }
+.target b { display: block; font-family: var(--font-display); font-weight: 700;
+            font-size: clamp(1.6rem, 6vw, 2.2rem); line-height: 1.1; }
+
+.zonebar { position: relative; height: 14px; margin-top: 18px; }
+.zonebar-track { position: absolute; inset: 3px 0; border-radius: 999px;
+                 background: var(--surface-2); overflow: hidden; }
+.zonebar-track i { position: absolute; top: 0; bottom: 0; opacity: .85; }
+.zonebar-band {
+  position: absolute; top: -3px; bottom: -3px; width: 0; border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, .85);
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, .35);
+  transition: left .5s, width .5s;
+}
+.zonebar-now {
+  position: absolute; top: 50%; left: 0; width: 22px; height: 22px;
+  margin: -11px 0 0 -11px; border-radius: 50%; background: var(--fg);
+  border: 4px solid var(--bg); box-shadow: 0 0 0 2px var(--tone), 0 0 18px var(--tone);
+  transition: left .6s cubic-bezier(.2, .8, .2, 1), box-shadow .4s;
+}
+.reason { position: relative; margin-top: 16px; color: var(--muted);
+          font-size: .84rem; font-variant-numeric: tabular-nums; }
+
+/* --- metrics ------------------------------------------------------------ */
+
+.metrics { display: grid; grid-auto-flow: column;
+           grid-auto-columns: minmax(0, 1fr); gap: 12px; }
+.metric {
+  padding: 14px 16px 12px; border-radius: var(--r-lg);
+  background: var(--surface); border: 1px solid var(--line); min-width: 0;
+}
+.metric b { display: block; margin-top: 4px; font-family: var(--font-display);
+            font-weight: 700; line-height: 1;
+            /* Nicht nur nach der Breite: im Querformat ist die Hoehe knapp,
+               und dreistellige Watt liefen aus der Kachel. */
+            font-size: clamp(1.8rem, min(9vw, 7.5vh), 3.4rem); }
+.metric small { color: var(--muted); font-size: .8rem; }
+.pips { display: grid; grid-template-columns: repeat(16, 1fr); gap: 2px; margin-top: 8px; }
+.pips i { height: 5px; border-radius: 2px; background: var(--surface-3);
+          transition: background .3s; }
+.pips i.on { background: var(--accent); }
+
+.stats { display: grid; grid-auto-flow: column;
+         grid-auto-columns: minmax(0, 1fr);
+         padding: 12px 4px; border-radius: var(--r-lg);
+         background: var(--surface); border: 1px solid var(--line); }
+.stats > div { padding: 0 14px; min-width: 0; }
+.stats > div + div { border-left: 1px solid var(--line); }
+.stats b { font-family: var(--font-display); font-size: clamp(1.25rem, 5vw, 1.6rem);
+           font-weight: 650; }
+.stats small { color: var(--muted); font-size: .78rem; margin-left: 4px; }
+
+/* --- session ------------------------------------------------------------ */
+
+.session { display: flex; flex-direction: column; }
+.session-empty { text-align: center; padding: 18px 8px 8px; }
+.session-empty h2 { font-family: var(--font-display); font-size: 1.35rem;
+                    letter-spacing: -.01em; }
+.session-empty p { margin: 6px 0 20px; }
+.session-empty .btn { min-width: min(260px, 100%); }
+.empty-art { display: flex; align-items: flex-end; justify-content: center;
+             gap: 5px; height: 54px; margin-bottom: 18px; }
+.empty-art i { width: 16px; border-radius: 5px; background: var(--surface-3); }
+.empty-art i:nth-child(1) { height: 30%; } .empty-art i:nth-child(2) { height: 45%; }
+.empty-art i:nth-child(3) { height: 90%; background: var(--accent); }
+.empty-art i:nth-child(4) { height: 40%; }
+.empty-art i:nth-child(5) { height: 90%; background: var(--accent); }
+.empty-art i:nth-child(6) { height: 40%; } .empty-art i:nth-child(7) { height: 25%; }
+
+.seg-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; }
+.seg-title { min-width: 0; }
+.seg-name { font-family: var(--font-display); font-size: clamp(1.3rem, 5vw, 1.7rem);
+            font-weight: 700; letter-spacing: -.015em; line-height: 1.15;
+            overflow-wrap: anywhere; margin-top: 2px; }
+.seg-time { font-family: var(--font-display); font-weight: 800; line-height: .9;
+            font-size: clamp(3rem, 13vw, 4.6rem); letter-spacing: -.04em; }
+.progress { height: 6px; border-radius: 999px; background: var(--surface-2);
+            margin-top: 16px; overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; border-radius: inherit;
+              background: var(--accent); transition: width .9s linear; }
+
+.timeline-wrap { position: relative; margin-top: 16px; }
+.timeline { display: flex; align-items: flex-end; gap: 2px; height: 58px; }
+.timeline i { flex: 1 1 0; min-width: 3px; border-radius: 4px 4px 2px 2px;
+              opacity: .75; transition: opacity .3s; }
+.timeline i.past { opacity: .22; }
+.timeline i.now { opacity: 1; box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px rgba(255, 255, 255, .7); }
+.timeline-cursor { position: absolute; top: -4px; bottom: -4px; width: 2px;
+                   margin-left: -1px; background: var(--fg); border-radius: 2px;
+                   transition: left .9s linear; }
+.seg-next { color: var(--muted); font-size: .88rem; margin-top: 12px; }
+
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+            gap: 10px; margin-top: 18px; }
+/* Waehrend der Fahrt bleiben Pause und Stopp am unteren Rand erreichbar.
+   Gemessen lagen sie sonst auf iPhone hoch und iPad hoch unter dem Falz — man
+   haette im Tritt scrollen muessen, um anzuhalten. */
+body[data-running="1"] .controls {
+  position: sticky; bottom: max(6px, env(safe-area-inset-bottom)); z-index: 4;
+}
+/* Der Streifen dahinter, damit das Profil nicht durch die Knoepfe scheint. */
+body[data-running="1"] .controls::before {
+  content: ''; position: absolute; inset: -14px -18px -14px;
+  background: linear-gradient(to top, var(--bg-2) 62%, rgba(13, 17, 23, .86));
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border-radius: 18px; z-index: -1;
+}
+.start-hint { margin: 10px 0 0; text-align: center; color: var(--muted); font-size: .85rem; }
+
+.session-foot { display: flex; justify-content: space-between; gap: 8px;
+                margin: 14px -8px -6px; }
+.session-foot .btn:only-child,
+.session-foot [hidden] + .btn { margin-left: auto; }
+.btn[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
+
+.free-note { margin: 12px 0 0; font-size: .88rem; }
+.free-control { display: flex; align-items: center; gap: 12px; margin-top: 16px;
+                padding: 14px; border-radius: var(--r-md); background: var(--surface-2); }
+.free-control input { flex: 1; min-width: 0; }
+.free-control b { min-width: 4.8em; text-align: right; font-size: 1.05rem; }
+
+.ride-head { display: flex; flex-wrap: wrap; align-items: baseline;
+             justify-content: space-between; gap: 4px 12px; }
+.ride-head h2 { font-size: 1.05rem; }
+.ride-head .muted { font-size: .88rem; font-variant-numeric: tabular-nums; }
+.ride-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+                gap: 8px; margin-top: 14px; }
+.ride .msg { margin-top: 10px; }
+.ride .msg:empty { display: none; }
+
+/* --- controls ----------------------------------------------------------- */
+
+.btn {
+  appearance: none; -webkit-appearance: none; display: inline-flex;
+  align-items: center; justify-content: center; gap: 8px;
+  min-height: 46px; padding: 0 18px; border-radius: 14px; cursor: pointer;
+  font: 600 .98rem/1.1 var(--font); color: var(--fg); text-align: center;
+  background: var(--surface-2); border: 1px solid var(--line);
+  transition: background .15s, border-color .15s, transform .08s, opacity .15s;
+}
+.btn:hover:not(:disabled) { background: var(--surface-3); }
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn:disabled { opacity: .35; cursor: default; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent;
+               box-shadow: 0 8px 24px -10px rgba(198, 255, 52, .55); }
+.btn.primary:hover:not(:disabled) { background: #d4ff66; }
+.btn.danger { background: rgba(255, 77, 109, .12); color: #ff9aac;
+              border-color: rgba(255, 77, 109, .35); }
+.btn.danger:hover:not(:disabled) { background: rgba(255, 77, 109, .2); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.btn.ghost:hover:not(:disabled) { color: var(--fg); background: var(--surface-2); }
+.btn.sm { min-height: 38px; padding: 0 13px; font-size: .88rem; border-radius: 11px; }
+.btn.lg { min-height: 54px; font-size: 1.05rem; border-radius: 16px; }
+.btn.xl { min-height: 64px; font-size: 1.15rem; border-radius: 18px; }
+.btn.block { width: 100%; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+input[type=number],
+input[type=text],
+input[type=password],
+select {
+  font: 500 16px/1.2 var(--font); color: var(--fg);
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: var(--r-sm); min-height: 46px; padding: 0 12px;
+  min-width: 0; transition: border-color .15s, box-shadow .15s;
+}
+input:focus-visible,
+select:focus-visible,
+.btn:focus-visible,
+.icon-btn:focus-visible,
+.chip:focus-visible {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+}
+input::placeholder { color: var(--faint); }
+select {
+  appearance: none; -webkit-appearance: none; padding-right: 34px; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238c95a3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 11px center; background-size: 16px;
+}
+select option { background: var(--bg-2); }
+
+input[type=range] {
+  -webkit-appearance: none; appearance: none; flex: 1; min-width: 0;
+  height: 36px; background: transparent; cursor: pointer;
+}
+input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 999px; background: var(--surface-3); }
+input[type=range]::-moz-range-track { height: 6px; border-radius: 999px; background: var(--surface-3); }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 26px; height: 26px; margin-top: -10px;
+  border-radius: 50%; background: var(--accent); border: 4px solid var(--bg);
+}
+input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); border: 4px solid var(--bg); }
+
+.switch { appearance: none; -webkit-appearance: none; position: relative; flex: none;
+          width: 50px; height: 30px; margin: 0; border-radius: 999px; cursor: pointer;
+          background: var(--surface-3); transition: background .2s; }
+.switch::before { content: ""; position: absolute; top: 3px; left: 3px; width: 24px;
+                  height: 24px; border-radius: 50%; background: #fff;
+                  transition: transform .2s cubic-bezier(.2, .8, .2, 1); }
+.switch:checked { background: var(--accent); }
+.switch:checked::before { transform: translateX(20px); background: var(--accent-ink); }
+
+/* --- sheets ------------------------------------------------------------- */
+
+dialog.sheet {
+  position: fixed; inset: 0; margin: 0; padding: 0; border: 0;
+  width: 100%; max-width: 100%; height: 100%; max-height: 100%;
+  color: var(--fg); background: var(--bg-2);
+}
+dialog.sheet::backdrop { background: rgba(0, 0, 0, .6);
+                         -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+dialog.sheet[open] { animation: sheet-up .32s cubic-bezier(.2, .8, .2, 1); }
+@keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } }
+@media (min-width: 720px) {
+  dialog.sheet { left: auto; width: min(540px, 100%);
+                 border-left: 1px solid var(--line);
+                 box-shadow: -30px 0 60px -30px rgba(0, 0, 0, .8); }
+  dialog.sheet[open] { animation-name: sheet-in; }
+  @keyframes sheet-in { from { transform: translateX(40px); opacity: 0; } }
+}
+.sheet-inner { display: flex; flex-direction: column; height: 100%; }
+.sheet-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 0; padding: max(14px, env(safe-area-inset-top)) 20px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.sheet-head h2 { font-family: var(--font-display); font-size: 1.3rem; letter-spacing: -.01em; }
+.sheet-head svg { width: 18px; height: 18px; }
+.sheet-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+              padding: 18px 20px 28px; display: grid; gap: 14px; align-content: start; }
+.sheet-foot { padding: 14px 20px max(16px, env(safe-area-inset-bottom));
+              border-top: 1px solid var(--line); background: var(--bg-2); }
+
+.group { padding: 16px; border-radius: var(--r-md); background: var(--surface);
+         border: 1px solid var(--line); min-width: 0; }
+.group h3 { font-size: .74rem; font-weight: 650; text-transform: uppercase;
+            letter-spacing: .09em; color: var(--muted); margin-bottom: 8px; }
+.group > p { margin: 10px 0 0; }
+.group-head,
+.preview-head { display: flex; align-items: baseline;
+                             justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.group-head h3,
+.preview-head h3 { margin-bottom: 0; }
+
+.segmented { display: grid; grid-auto-flow: column;
+             grid-auto-columns: minmax(0, 1fr); padding: 4px; gap: 4px;
+             border-radius: 14px; background: var(--surface-2); }
+.segmented .tab { appearance: none; border: 0; min-height: 42px; border-radius: 11px;
+                  padding: 0 4px; cursor: pointer; color: var(--muted);
+                  font: 600 clamp(.82rem, 2.6vw, .95rem)/1.15 var(--font);
+                  background: transparent; transition: background .2s, color .2s; }
+.segmented .tab[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+
+.notice { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+          flex-wrap: wrap; padding: 12px 14px; border-radius: var(--r-md);
+          background: rgba(255, 176, 32, .1); border: 1px solid rgba(255, 176, 32, .3);
+          color: #ffd592; font-size: .9rem; }
+
+.prog { display: grid; gap: 14px; }
+.frow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; padding: 8px 0; }
+.frow + .frow { border-top: 1px solid var(--line); }
+.frow-label { flex: 0 0 6.2em; font-weight: 500; }
+.frow .unit { color: var(--muted); font-size: .88rem; }
+.frow select { flex: 1 1 10em; max-width: 100%; }
+.frow select.mode { flex: 0 0 auto; }
+.frow .inline { display: flex; flex: 1 1 10em; }
+.frow .inline select { flex: 1; }
+.qty { display: inline-flex; align-items: center; gap: 6px; }
+.qty input { width: 4.6em; text-align: center; }
+@media (max-width: 460px) {
+  /* Put the target (mode and value) on its own line instead of letting it
+     break wherever the width runs out. */
+  .frow .bei { flex-basis: 100%; height: 0; overflow: hidden; font-size: 0; }
+  .qty input { width: 4em; }
+  .sheet-body { padding: 16px 16px 24px; }
+  .group { padding: 14px; }
+  .zone-cols,
+.zone-row { grid-template-columns: 6px minmax(0, 1fr) 3.5em 3.5em 34px; gap: 6px; }
+  .zone-row .icon-btn { width: 34px; height: 34px; }
+  .frow-label { flex-basis: 100%; color: var(--muted); font-size: .76rem; font-weight: 600;
+                text-transform: uppercase; letter-spacing: .07em; }
+}
+
+.preview .timeline { height: 48px; margin-top: 12px; }
+.preview .timeline:empty { display: none; }
+#workout-preview { margin-top: 10px; }
+#workout-preview:empty { display: none; }
+
+.zone-cols,
+.zone-row { display: grid; align-items: center; gap: 8px;
+                        grid-template-columns: 6px minmax(0, 1fr) 4.4em 4.4em 38px; }
+.zone-cols { margin-top: 14px; padding-bottom: 6px; color: var(--muted);
+             font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+.zone-list { display: grid; gap: 8px; }
+.zone-swatch { width: 6px; height: 34px; border-radius: 4px; background: var(--c); }
+.zone-row input { width: 100%; min-height: 42px; }
+.zone-row input[type=number] { text-align: center; padding: 0 4px; }
+.zone-row .icon-btn { width: 38px; height: 38px; color: var(--muted); font-size: 1.1rem; }
+.zone-foot { margin-top: 12px; }
+
+.field { display: grid; gap: 6px; }
+.field span { color: var(--muted); font-size: .84rem; }
+.field input { width: 100%; }
+
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 14px;
+              padding: 14px 16px; border-radius: var(--r-md); cursor: pointer;
+              background: var(--surface); border: 1px solid var(--line); }
+.switch-row small { display: block; color: var(--muted); font-size: .84rem; }
+
+.device { padding: 16px; border-radius: var(--r-md); background: var(--surface);
+          border: 1px solid var(--line); transition: border-color .3s; }
+.device[data-state="on"] { border-color: rgba(198, 255, 52, .35); }
+.device[data-state="err"] { border-color: rgba(255, 77, 109, .4); }
+.device-row { display: flex; align-items: center; gap: 12px; }
+.device-icon { display: grid; place-items: center; width: 44px; height: 44px; flex: none;
+               border-radius: 13px; background: var(--surface-2); color: var(--muted); }
+.device[data-state="on"] .device-icon { color: var(--accent-ink); background: var(--accent); }
+.device-info { flex: 1; min-width: 0; }
+.device-info b { display: block; }
+.device-info span { display: block; color: var(--muted); font-size: .84rem;
+                    overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.device[data-state="on"] .device-info span { color: var(--accent); }
+.device[data-state="err"] .device-info span { color: #ff8fa3; }
+.device[data-state="busy"] .device-info span { color: var(--warn); }
+.steps { margin: 14px 0 0; padding: 0 0 0 1.3em; color: var(--muted); font-size: .88rem; }
+.steps li + li { margin-top: 4px; }
+.steps b { color: var(--fg); font-weight: 600; }
+
+#log { margin: 10px 0 0; max-height: 280px; overflow: auto; padding: 10px;
+       border-radius: 10px; background: #05070a; border: 1px solid var(--line);
+       font: 11px/1.5 ui-monospace, "SF Mono", Menlo, monospace; color: var(--muted);
+       white-space: pre; }
+#log:empty { display: none; }
+#log-msg:not(:empty) { display: block; margin-top: 8px; }
+.about { text-align: center; margin: 4px 0 0; }
+
+/* --- small screens ------------------------------------------------------ */
+
+/* Nur dort, wo gestapelt wird: im flachen Querformat stehen Cockpit und
+   Training ohnehin nebeneinander, und die Umordnung wuerde sie verschraenken. */
+@media (max-width: 899px) and (min-height: 561px) {
+  body[data-mode="none"] .cockpit > .col { display: contents; }
+  body[data-mode="none"] .session { order: -1; }
+}
+
+@media (max-width: 420px) {
+  .card { padding: 16px; }
+  .metrics { gap: 8px; }
+  .metric { padding: 12px 12px 10px; }
+  .stats > div { padding: 0 10px; }
+  .chip { padding: 0 10px; }
+  .chip-label { display: none; }
+  .chip-rider .chip-label { display: inline-block; max-width: 5.5em; }
+  .ride-actions { grid-template-columns: 1fr 1fr; }
+  .ride-actions .primary { grid-column: 1 / -1; }
+}
+@media (max-width: 340px) { .brand-name { display: none; } }
+
+/* Tablet landscape: everything a ride needs on one screen, no scrolling. */
+@media (min-width: 900px) and (max-height: 900px) {
+  .hr-big { font-size: clamp(5rem, 13vh, 8.5rem); }
+  .metric b { font-size: clamp(2rem, 6vh, 3rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+*::before { animation: none !important; transition: none !important; }
+}
+
+/* --- Fahrer ------------------------------------------------------------- */
+
+.rider-list { display: grid; gap: 8px; margin-top: 12px; }
+.rider-row { display: grid; align-items: center; gap: 8px;
+             grid-template-columns: 14px minmax(0, 1fr) auto 38px; }
+.rider-row input { width: 100%; min-height: 42px; }
+.rider-row .icon-btn { width: 38px; height: 38px; color: var(--muted);
+                       font-size: 1.1rem; }
+.rider-dot { width: 10px; height: 10px; margin: 0 2px; border-radius: 50%;
+             background: var(--faint); }
+.rider-row[data-active="1"] .rider-dot {
+  background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.rider-row[data-active="1"] input { font-weight: 650; }
+.rider-here { color: var(--accent); font-size: .78rem; font-weight: 650;
+              padding: 0 4px; }
+/* Scharf gemachter Loeschknopf: erst der zweite Tipp loescht. */
+.rider-row .icon-btn[data-armed="1"] {
+  color: #ff9aac; background: rgba(255, 77, 109, .16);
+  border-color: rgba(255, 77, 109, .4);
+}
+.rider-foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.rider-foot input { flex: 1 1 8em; min-width: 0; min-height: 42px; }
+.rider-switch { margin-top: 10px; }
+
+/* Im freien Training gibt es keinen Zielpuls — die Kachel bliebe leer. */
+body[data-mode="free"] .target { display: none; }
+
+/* Neben der Pulskarte bleiben auf dem Telefon rund 80 px je Kennzahl. Darin
+   stand „LEIS…" statt „LEISTUNG", und dreistellige Watt liefen aus der
+   Kachel. Etikett und Zahl richten sich darum auch nach der Breite. */
+@media (max-width: 899px) {
+  /* Neben „143 bpm" ist das Etikett „Puls" eine Wiederholung. Die Breite
+     braucht der Zonen-Chip: gekuerzt auf „Grundl…" sagt er nichts mehr. */
+  
+  
+  body[data-running="1"] .metric .eyebrow {
+    font-size: .64rem; letter-spacing: .04em;
+  }
+}
+
+/* Im Abschnittstraining ist die rechte Spalte auf dem Tablet deutlich
+   kuerzer als die linke — der Abschnitt braucht weniger Platz als Puls,
+   Kennzahlen und Summen zusammen. Statt die untere Haelfte leer zu lassen,
+   waechst die Zeitleiste mit; sie ist die einzige Zeile, die von mehr Hoehe
+   wirklich profitiert. Nur waehrend der Fahrt: danach steht die Aufzeichnung
+   daneben, und die soll nicht mitgestreckt werden. */
+@media (min-width: 900px) {
+  body[data-mode="workout"][data-running="1"] .cockpit > .col:last-child {
+    align-content: stretch;
+  }
+  body[data-mode="workout"][data-running="1"] .session,
+body[data-mode="workout"][data-running="1"] #session-live,
+body[data-mode="workout"][data-running="1"] #seg-block {
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  body[data-mode="workout"][data-running="1"] #session-live,
+body[data-mode="workout"][data-running="1"] #seg-block,
+body[data-mode="workout"][data-running="1"] .timeline-wrap {
+    flex: 1 1 auto;
+  }
+  body[data-mode="workout"][data-running="1"] .timeline {
+    height: 100%; min-height: 58px;
+  }
+}
+
+/* Die Fahransicht war auf 844 px gebaut — die Bildschirmhoehe eines iPhone.
+   In Bluefy bleiben davon nach Adress- und Werkzeugleiste rund 740 uebrig,
+   ein iPhone 13 mini hat 700, ein SE 570. Gemessen fiel dort zuerst die
+   Trittfrequenz unter den Falz und dann die Steigung.
+
+   Statt auf eine Wunschhoehe zu bauen, schrumpft hier alles mit: Abstaende,
+   Polster, Schriftgrade, und das Profil bekommt seine Hoehe aus der
+   tatsaechlichen Fensterhoehe. */
+@media (max-width: 899px) and (max-height: 800px) {
+  .app { padding-top: max(8px, env(safe-area-inset-top)); }
+  
+  
+
+  
+  
+  
+
+  
+  
+  
+
+  body[data-running="1"] .hero { padding: 8px 14px; }
+  body[data-running="1"] .hr-big {
+    font-size: clamp(1.9rem, 6.4vh, 3.2rem);
+  }
+  body[data-running="1"] .target b { font-size: 1.15rem; }
+  body[data-running="1"] .zonebar { margin-top: 8px; }
+  body[data-running="1"] .metric { padding: 8px 12px 6px; }
+  body[data-running="1"] .metric b {
+    font-size: clamp(1.4rem, min(5.2vh, 8.5vw), 2.6rem);
+  }
+  body[data-running="1"] .seg-time {
+    font-size: clamp(2.2rem, min(8vh, 12vw), 3.4rem);
+  }
+  body[data-running="1"] .btn.xl { min-height: 52px; }
+}
+
+/* Sehr kurze Schirme — iPhone SE und kleiner, in Bluefy rund 570 px.
+   Gestapelt brauchen Pulskarte und Kennzahlen 187 px; nebeneinander sind es
+   rund 90. Die Summen (Fahrzeit, Energie) treten waehrend der Fahrt ab: sie
+   sind Bilanz, kein Blick im Tritt, und stehen danach wieder da. */
+@media (max-width: 899px) and (max-height: 660px) {
+  
+  
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+  /* Gestapelt passt die Fahransicht auch auf 570 px, wenn Erklaerzeile und
+     Stufenpunkte abtreten. */
+  body[data-running="1"] .reason { display: none; }
+  body[data-running="1"] .pips { display: none; }
+  body[data-running="1"] .seg-next { display: none; }
+}
+
+/* Bluefy hat eine feste Leiste am unteren Rand, die sich nicht einklappen
+   laesst. Wie viel dann uebrig bleibt, haengt vom Geraet ab — und jede Zahl,
+   die ich hier einsetze, ist geraten.
+
+   Also wird nicht mehr geraten: waehrend der Fahrt ist die Ansicht genau so
+   hoch wie das Fenster, und die Zeitleiste nimmt auf, was nach allen festen
+   Zeilen uebrig bleibt. Damit passt es bei jeder Hoehe, statt bei den drei
+   Hoehen, die ich mir ausgedacht habe. */
+@media (max-width: 899px) {
+ @media (min-height: 500px) {
+  /* Nicht die Kopfhoehe abziehen — sie ausrechnen lassen. Die Huelle ist so
+     hoch wie das Fenster, Kopfleiste und Banner nehmen sich, was sie
+     brauchen, und das Cockpit bekommt den Rest. Damit gibt es keine Zahl
+     mehr, die falsch sein kann. */
+  
+  /* Ein Raster, nicht zwei sich ueberlagernde Regeln: eine Flex-Spalte hatte
+     das Nebeneinander von Puls und Kennzahlen wieder aufgehoben und kostete
+     damit rund 80 px, genau dort, wo sie fehlten. */
+  
+  
+  
+  
+  
+
+  
+  /* Der einzige Block, der nachgeben darf. */
+  
+  
+  
+  
+  /* Die Knoepfe stehen am Fuss der Ansicht, nicht mehr klebend darueber. */
+  
+  
+  
+  
+  
+  
+
+  /* Dieselbe Konstruktion fuer Zielzone, Intervalle und freies Training.
+     Sie hatten sie nicht: gemessen auf 375x570 war die Seite 840 px hoch,
+     der Puls stand oben, der Abschnitt mit Restzeit und Zeitleiste 200 px
+     unter dem Falz — im Tritt scrollen, um zu sehen, wie lange noch.
+     Nachgeben darf hier die Zeitleiste. */
+  body[data-running="1"] .app {
+    height: 100dvh; display: flex; flex-direction: column;
+    overflow: auto;                
+  }
+  body[data-running="1"] .cockpit {
+    flex: 1 1 auto; min-height: 0; gap: 8px;
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+  body[data-running="1"] .cockpit > .col {
+    display: contents;
+  }
+  /* Summen und Aufzeichnung sind Bilanz, kein Blick im Tritt. Die Restzeit
+     des Abschnitts und die Gesamtrestzeit stehen im Abschnittskopf. */
+  body[data-running="1"] .stats,
+body[data-running="1"] .ride { display: none; }
+
+  body[data-running="1"] .session {
+    min-height: 0; display: flex; flex-direction: column;
+  }
+  body[data-running="1"] #session-live {
+    flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+  }
+  body[data-mode="workout"][data-running="1"] #seg-block {
+    flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+  }
+  body[data-mode="workout"][data-running="1"] .timeline-wrap {
+    flex: 1 1 auto; min-height: 0;
+  }
+  body[data-mode="workout"][data-running="1"] .timeline {
+    height: 100%; min-height: 26px;
+  }
+  body[data-running="1"] .controls {
+    position: static; margin-top: auto; padding-top: 8px;
+  }
+  body[data-running="1"] .controls::before {
+    display: none;
+  }
+  body[data-running="1"] .session-foot { display: none; }
+ }
+
+  /* Die Kopfleiste wird waehrend der Fahrt schmaler — die Chips bleiben, ihr
+     Zustand ist im Zweifel das Wichtigste auf dem Schirm. */
+  body[data-running="1"] .topbar { min-height: 0; }
+  body[data-running="1"] .chip { height: 32px; }
+  body[data-running="1"] .icon-btn { width: 32px; height: 32px; }
+  body[data-running="1"] .brand-mark { width: 26px; height: 26px; }
+}
